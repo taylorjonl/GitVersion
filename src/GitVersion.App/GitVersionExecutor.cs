@@ -57,16 +57,8 @@ namespace GitVersion
 
         private int RunGitVersionTool(GitVersionOptions gitVersionOptions)
         {
-            var mutexName = this.repositoryInfo.DotGitDirectory.Replace(Path.DirectorySeparatorChar.ToString(), "");
-            using var mutex = new Mutex(true, $@"Global\gitversion{mutexName}", out var acquired);
-
             try
             {
-                if (!acquired)
-                {
-                    mutex.WaitOne();
-                }
-
                 var variables = this.gitVersionCalculateTool.CalculateVersionVariables();
 
                 var configuration = this.configProvider.Provide(overrideConfig: gitVersionOptions.ConfigInfo.OverrideConfig);
@@ -100,10 +92,6 @@ namespace GitVersion
                     this.log.Error("Couldn't dump the git graph due to the following error: " + dumpGraphException);
                 }
                 return 1;
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
             }
 
             return 0;

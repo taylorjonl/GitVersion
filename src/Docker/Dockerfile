@@ -1,19 +1,19 @@
 ARG REGISTRY='docker.io'
-ARG DISTRO='debian-9'
-ARG DOTNET_VERSION='3.1'
-ARG VERSION='5.5.1'
+ARG DISTRO='alpine.3.14'
+ARG DOTNET_VERSION='5.0'
 
-FROM $REGISTRY/gittools/build-images:$DISTRO-sdk-$DOTNET_VERSION as installer
+FROM $REGISTRY/gittools/build-images:$DISTRO-sdk-$DOTNET_VERSION as build
 ARG contentFolder
-ARG VERSION
 
-WORKDIR /app
-COPY $contentFolder/ ./
-RUN dotnet tool install GitVersion.Tool --version $VERSION --tool-path /tools --add-source .
+WORKDIR /root
+RUN git clone -b feature/read-only-root https://github.com/taylorjonl/GitVersion.git \
+    && dotnet publish -f "net5.0" -o /app ./GitVersion/src/GitVersion.App/GitVersion.App.csproj
 
 FROM $REGISTRY/gittools/build-images:$DISTRO-runtime-$DOTNET_VERSION
 
 WORKDIR /tools
-COPY --from=installer /tools .
+COPY --from=build /app .
 
-ENTRYPOINT ["/tools/dotnet-gitversion"]
+ENV COMPlus_EnableDiagnostics="0"
+
+ENTRYPOINT ["/tools/gitversion"]
